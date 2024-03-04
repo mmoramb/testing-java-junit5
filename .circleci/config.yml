@@ -2,39 +2,59 @@
 # Stacks detected: deps:java:.
 version: 2.1
 jobs:
-  test-java:
     docker:
-      - image: cimg/openjdk:17.0
+      - image:circleci/openjdk:11-browser-legacy
+    working_directory: ~/repo
+    environment:
+      MAVEN_OPTS: -Xmx3200m
+
     steps:
       - checkout
-      - run:
-          name: Calculate cache key
-          command: |-
-            find . -name 'pom.xml' -o -name 'gradlew*' -o -name '*.gradle*' | \
-                    sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
       - restore_cache:
-          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
-      - run:
-          command: mvn verify
-      - store_test_results:
-          path: target/surefire-reports
+          - v1-dependencies-{{ checksum "pom-xml"}}
+          - v1-dependencies-
+      - rum: mvn dependency:go-offline
       - save_cache:
-          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
           paths:
-            - ~/.m2/repository
-  deploy:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom-xml"}}
+      - run: mvn integration-tests
+
+#version: 2.1
+#jobs:
+#  test-java:
+#    docker:
+#      - image: cimg/openjdk:17.0
+#    steps:
+#      - checkout
+#      - run:
+#          name: Calculate cache key
+#          command: |-
+#            find . -name 'pom.xml' -o -name 'gradlew*' -o -name '*.gradle*' | \
+#                    sort | xargs cat > /tmp/CIRCLECI_CACHE_KEY
+#      - restore_cache:
+#          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
+#      - run:
+#          command: mvn verify
+#      - store_test_results:
+#          path: target/surefire-reports
+#      - save_cache:
+#          key: cache-{{ checksum "/tmp/CIRCLECI_CACHE_KEY" }}
+#          paths:
+#            - ~/.m2/repository
+#  deploy:
     # This is an example deploy job, not actually used by the workflow
-    docker:
-      - image: cimg/base:stable
-    steps:
+#    docker:
+#      - image: cimg/base:stable
+#    steps:
       # Replace this with steps to deploy to users
-      - run:
-          name: deploy
-          command: '#e.g. ./deploy.sh'
-workflows:
-  build-and-test:
-    jobs:
-      - test-java
+#      - run:
+#          name: deploy
+#          command: '#e.g. ./deploy.sh'
+#workflows:
+#  build-and-test:
+#    jobs:
+#      - test-java
     # - deploy:
     #     requires:
     #       - test-java
